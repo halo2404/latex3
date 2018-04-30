@@ -13,6 +13,8 @@ this project uses date-based 'snapshot' version identifiers.
 - Additional `\prop_put:Nnn` variants
 - `\seq_set_map_x:NNn`
 - `\msg_term:nn(nnnn)`
+- `\token_case_catcode:NnTF`, `\token_case_charcode:NnTF`, and
+  `\token_case_meaning:NnTF`
 
 ### Fixed
 - File lookup with `\input@path`
