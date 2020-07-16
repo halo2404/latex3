@@ -9,6 +9,7 @@ this project uses date-based 'snapshot' version identifiers.
 
 ### Added
 - `\file_parse_full_name:n` and `\file_parse_full_name_apply:nN`
+- `\peek_analysis_map_inline:n`
 
 ### Fixed
 - File lookup with `\input@path`
