@@ -9,7 +9,7 @@ this project uses date-based 'snapshot' version identifiers.
 
 ### Added
 - `\peek_analysis_map_inline:n`
-- `\peek_regex:nTF`, `\peek_regex_remove:nTF`, and
+- `\peek_regex:nTF`, `\peek_regex_remove_once:nTF`, and
   `\peek_regex_replace_once:nnTF`
 
 ## [2020-07-17]
