@@ -78,7 +78,7 @@ and all files in that bundle must be distributed together.
         \from{l3file.dtx}       {package}
         \from{l3skip.dtx}       {package}
         \from{l3keys.dtx}       {package}
-        \from{l3intarray.dtx}   {package}
+        \from{l3intarray.dtx}   {package,tex}
         \from{l3fp.dtx}         {package}
         \from{l3fp-aux.dtx}     {package}
         \from{l3fp-traps.dtx}   {package}
@@ -165,6 +165,9 @@ and all files in that bundle must be distributed together.
 
 \endpreamble
 \nopostamble
-\generate{\file{expl3.lua}{\from{l3luatex.dtx}{package,lua}}}
+\generate{\file{expl3.lua}{
+  \from{l3luatex.dtx}{package,lua}
+  \from{l3intarray.dtx}{package,lua}
+}}
 
 \endbatchfile
