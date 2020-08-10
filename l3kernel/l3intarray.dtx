@@ -259,17 +259,16 @@ if token.set_lua and luatexbase and luatexbase.new_luafunction then
 % \end{macro}
 % \end{macro}
 %
-% \begin{macro}[EXP]{\intarray_count:N, \intarray_count:c}
-% \begin{macro}[EXP]{\@@_gset_count:Nw}
-%   Set and get the size of an array. ``Setting the size'' means in this context that
-%   we add zeros until we reach the desired size.
+% \begin{macro}{@@_table}
+%   Internal helper to scan an intarray token, extract the associated
+%   Lua table and return an error if the input is invalid.
 %    \begin{macrocode}
 %<*lua>
 local undefined_cs = token.command_id'undefined_cs'
 local functions = lua.get_functions_table()
 
 local @@_table do
-  local tables = {[0] = {}}
+  local tables = get_luadata and get_luadata'@@' or {[0] = {}}
   function @@_table()
     local t = token.scan_token()
     if t.csname ~= 's_@@' then
@@ -284,8 +283,24 @@ local @@_table do
     tables[i] = table
     return table
   end
+  if register_luadata then
+    register_luadata('@@', function()
+      local t = "{[0]={},"
+      for i=1, #tables do
+        t = string.format("%s{%s},", t, table.concat(tables[i], ','))
+      end
+      return t .. "}"
+    end)
+  end
 end
-
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}[EXP]{\intarray_count:N, \intarray_count:c}
+% \begin{macro}[EXP]{\@@_gset_count:Nw}
+%   Set and get the size of an array. ``Setting the size'' means in this context that
+%   we add zeros until we reach the desired size.
+%    \begin{macrocode}
 local @@_gset_count_func do
   local tok = token.create'@@_gset_count:Nw'
   if tok.command == undefined_cs then
