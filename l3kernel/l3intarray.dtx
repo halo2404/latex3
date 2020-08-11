@@ -173,7 +173,7 @@
 %<@@=intarray>
 %    \end{macrocode}
 %
-% There are two implementations for this module: One \csname{fontdimen} based one
+% There are two implementations for this module: One \cs{fontdimen} based one
 % for more traditional \TeX\ engines and a Lua based one for engines with Lua support.
 %
 % \subsection{Lua implementation}
@@ -331,10 +331,14 @@ functions[intarray_count_func] = function()
   tex.write(#@@_table())
 end
 %</lua>
+%    \end{macrocode}
+%
+%    \begin{macrocode}
 %<*tex>
 \cs_generate_variant:Nn \intarray_count:N { c }
 %</tex>
 %    \end{macrocode}
+% \end{macro}
 % \end{macro}
 %
 % \subsubsection{Array items}
@@ -368,7 +372,7 @@ functions[@@_gset_func] = function()
 end
 %</lua>
 %    \end{macrocode}
-% \begin{end}
+% \end{macro}
 %
 % \begin{macro}{\intarray_gset:Nnn, \intarray_gset:cnn, \__kernel_intarray_gset:Nnn}
 %   Set the appropriate \tn{fontdimen}.  The
@@ -441,8 +445,9 @@ functions[@@_item_func] = function()
   tex.write(item or 0)
 end
 %</lua>
-%    \begin{macrocode}
 %    \end{macrocode}
+%
+%    \begin{macrocode}
 %<*tex>
 \cs_new:Npn \__kernel_intarray_item:Nn #1#2
   { \@@_item:NwF #1 #2 { } }
@@ -636,11 +641,11 @@ end
 % \end{macro}
 % \end{macro}
 %
-%    \end{macrocode}
+%    \begin{macrocode}
 %<*lua>
 end
 %</lua>
-%    \begin{macrocode}
+%    \end{macrocode}
 %
 % \subsection{Font dimension based implementation}
 %
