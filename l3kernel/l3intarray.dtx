@@ -195,7 +195,39 @@
 %
 %    \begin{macrocode}
 %<*lua>
-if token.set_lua and luatexbase and luatexbase.new_luafunction then
+if token.set_lua and (luatexbase or context) then
+  local luacmd
+
+  local undefined_cs = token.command_id'undefined_cs'
+
+  if luatexbase then
+    local new_luafunction = luatexbase.new_luafunction
+    local functions = lua.get_functions_table()
+    function luacmd(name, func, ...)
+      local id
+      local tok = token.create(name)
+      if tok.command == undefined_cs then
+        id = new_luafunction(name)
+        token.set_lua(name, id, ...)
+      else
+        id = tok.index or tok.mode
+      end
+      functions[id] = func
+    end
+  elseif context then
+    local register = context.functions.register
+    local functions = context.functions.known
+    function luacmd(name, func, ...)
+      local tok = token.create(name)
+      if tok.command == undefined_cs then
+        token.set_lua(name, register(func), ...)
+      else
+        functions[tok.index or tok.mode] = func
+      end
+    end
+  end
+
+  local scan_int = token.scan_int or token.scan_integer
 %</lua>
 %    \end{macrocode}
 %
@@ -264,8 +296,6 @@ if token.set_lua and luatexbase and luatexbase.new_luafunction then
 %   Lua table and return an error if the input is invalid.
 %    \begin{macrocode}
 %<*lua>
-local undefined_cs = token.command_id'undefined_cs'
-local functions = lua.get_functions_table()
 
 local @@_table do
   local tables = get_luadata and get_luadata'@@' or {[0] = {}}
@@ -276,7 +306,7 @@ local @@_table do
       tex.error'intarray expected'
       return tables[0]
     end
-    local i = token.scan_int()
+    local i = scan_int()
     local table = tables[i]
     if table then return table end
     table = {}
@@ -301,35 +331,16 @@ end
 %   Set and get the size of an array. ``Setting the size'' means in this context that
 %   we add zeros until we reach the desired size.
 %    \begin{macrocode}
-local @@_gset_count_func do
-  local tok = token.create'@@_gset_count:Nw'
-  if tok.command == undefined_cs then
-    @@_gset_count_func = luatexbase.new_luafunction'@@_gset_count:Nw'
-    token.set_lua('@@_gset_count:Nw', @@_gset_count_func, 'protected', 'global')
-  else
-    @@_gset_count_func = tok.index or tok.mode
-  end
-end
 
-functions[@@_gset_count_func] = function()
+luacmd('@@_gset_count:Nw', function()
   local t = @@_table()
-  local n = token.scan_int()
+  local n = scan_int()
   for i=#t+1, n do t[i] = 0 end
-end
+end, 'protected', 'global')
 
-local intarray_count_func do
-  local tok = token.create'intarray_count:N'
-  if tok.command == undefined_cs then
-    intarray_count_func = luatexbase.new_luafunction'intarray_count:N'
-    token.set_lua('intarray_count:N', intarray_count_func, 'global')
-  else
-    intarray_count_func = tok.index or tok.mode
-  end
-end
-
-functions[intarray_count_func] = function()
+luacmd('intarray_count:N', function()
   tex.write(#@@_table())
-end
+end, 'global')
 %</lua>
 %    \end{macrocode}
 %
@@ -348,28 +359,17 @@ end
 %   This has been chosen over a more conventional order to provide a delimiter for the numbers.
 %    \begin{macrocode}
 %<*lua>
-
-local @@_gset_func do
-local tok = token.create'@@_gset:wNwF'
-  if tok.command == undefined_cs then
-    @@_gset_func = luatexbase.new_luafunction'@@_gset:wNwF'
-    token.set_lua('@@_gset:wNwF', @@_gset_func, 'protected', 'global')
-  else
-    @@_gset_func = tok.index or tok.mode
-  end
-end
-
-functions[@@_gset_func] = function()
-  local i = token.scan_int()
+luacmd('@@_gset:wNwF', function()
+  local i = scan_int()
   local t = @@_table()
   if t[i] then
-    t[i] = token.scan_int()
+    t[i] = scan_int()
     token.scan_toks()
   else
-    token.scan_int()
+    scan_int()
     token.put_next(token.scan_toks())
   end
-end
+end, 'protected', 'global')
 %</lua>
 %    \end{macrocode}
 % \end{macro}
@@ -424,26 +424,16 @@ end
 %   suitable for \cs{int_value:w}.
 %    \begin{macrocode}
 %<*lua>
-local @@_item_func do
-local tok = token.create'@@_item:NwF'
-  if tok.command == undefined_cs then
-    @@_item_func = luatexbase.new_luafunction'@@_item:NwF'
-    token.set_lua('@@_item:NwF', @@_item_func, 'global')
-  else
-    @@_item_func = tok.index or tok.mode
-  end
-end
-
-functions[@@_item_func] = function()
+luacmd('@@_item:NwF', function()
   local t = @@_table()
-  local item = t[token.scan_int()]
+  local item = t[scan_int()]
   if item then
     token.scan_toks()
   else
     token.put_next(token.scan_toks())
   end
   tex.write(item or 0)
-end
+end, 'global')
 %</lua>
 %    \end{macrocode}
 %
