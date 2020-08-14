@@ -297,11 +297,19 @@ if token.set_lua and (luatexbase or context) then
 %    \begin{macrocode}
 %<*lua>
 
+local scan_token = token.scan_token
+local scan_toks = token.scan_toks
+local get_csname = token.get_csname
+local put_next = token.put_next
+local use_none
+local use_i
+local s_@@
+local scan_argument = token.scan_argument
 local @@_table do
   local tables = get_luadata and get_luadata'@@' or {[0] = {}}
   function @@_table()
-    local t = token.scan_token()
-    if t.csname ~= 's_@@' then
+    local t = scan_token()
+    if t ~= s_@@ then
       token.put_next(t)
       tex.error'intarray expected'
       return tables[0]
@@ -332,14 +340,21 @@ end
 %   we add zeros until we reach the desired size.
 %    \begin{macrocode}
 
+local write = tex.write
+
 luacmd('@@_gset_count:Nw', function()
+  if not s_@@ then
+    s_@@ = token.create's_@@'
+    use_i = token.create'use:n'
+    use_none = token.create'use_none:n'
+  end
   local t = @@_table()
   local n = scan_int()
   for i=#t+1, n do t[i] = 0 end
 end, 'protected', 'global')
 
 luacmd('intarray_count:N', function()
-  tex.write(#@@_table())
+  write(#@@_table())
 end, 'global')
 %</lua>
 %    \end{macrocode}
@@ -354,7 +369,7 @@ end, 'global')
 %
 % \subsubsection{Array items}
 %
-% \begin{macro}{\@@_gset:wNwF}
+% \begin{macro}{\@@_gset:wNwF, \@@_gset:wNw}
 %   The setter provided by Lua. The argument order somewhat emulates the |\fontdimen|
 %   This has been chosen over a more conventional order to provide a delimiter for the numbers.
 %    \begin{macrocode}
@@ -364,10 +379,22 @@ luacmd('@@_gset:wNwF', function()
   local t = @@_table()
   if t[i] then
     t[i] = scan_int()
-    token.scan_toks()
+    put_next(use_none)
   else
     scan_int()
-    token.put_next(token.scan_toks())
+    put_next(use_i)
+  end
+end, 'protected', 'global')
+
+luacmd('@@_gset:wNw', function()
+  local i = scan_int()
+  local t = @@_table()
+  if t[i] then
+    t[i] = scan_int()
+    put_next(use_none)
+  else
+    scan_int()
+    put_next(use_i)
   end
 end, 'protected', 'global')
 %</lua>
@@ -383,7 +410,7 @@ end, 'protected', 'global')
 %    \begin{macrocode}
 %<*tex>
 \cs_new_protected:Npn \__kernel_intarray_gset:Nnn #1#2#3
-{ \@@_gset:wNwF #2 #1 #3 { } }
+{ \@@_gset:wNw #2 #1 #3 \scan_stop: }
 \cs_new_protected:Npn \intarray_gset:Nnn #1#2#3
   {
     \@@_gset:wNwF \int_eval:n {#2} #1 \int_eval:n{#3}
@@ -417,22 +444,29 @@ end, 'protected', 'global')
 % \end{macro}
 %
 % \begin{macro}[EXP]{\intarray_item:Nn, \intarray_item:cn, \__kernel_intarray_item:Nn}
-% \begin{macro}{\@@_item:NwF}
+% \begin{macro}{\@@_item:wNF,\@@_item:wN}
 %   Get the appropriate \tn{fontdimen} and perform bound checks.  The
 %   \cs{__kernel_intarray_item:Nn} function omits bound checks and omits
 %   \cs{int_eval:n}, namely its argument must be a \TeX{} integer
 %   suitable for \cs{int_value:w}.
 %    \begin{macrocode}
 %<*lua>
-luacmd('@@_item:NwF', function()
+luacmd('@@_item:wNF', function()
+  local i = scan_int()
   local t = @@_table()
-  local item = t[scan_int()]
+  local item = t[i]
   if item then
-    token.scan_toks()
+    put_next(use_none)
   else
-    token.put_next(token.scan_toks())
+    put_next(use_i)
   end
-  tex.write(item or 0)
+  write(item or 0)
+end, 'global')
+
+luacmd('@@_item:wN', function()
+  local i = scan_int()
+  local t = @@_table()
+  write(t[i])
 end, 'global')
 %</lua>
 %    \end{macrocode}
@@ -440,10 +474,10 @@ end, 'global')
 %    \begin{macrocode}
 %<*tex>
 \cs_new:Npn \__kernel_intarray_item:Nn #1#2
-  { \@@_item:NwF #1 #2 { } }
+  { \@@_item:wN #2 #1 }
 \cs_new:Npn \intarray_item:Nn #1#2
   {
-    \@@_item:NwF #1 \int_eval:n {#2}
+    \@@_item:wNF \int_eval:n {#2} #1
       {
         \__kernel_msg_expandable_error:nnfff { kernel } { out-of-bounds }
           { \token_to_str:N #1 } { \int_eval:n {#2} } { \intarray_count:N #1 }
